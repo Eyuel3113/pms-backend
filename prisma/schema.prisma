@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String
+  unit      Unit?    @relation(fields: [unitId], references: [id])
+  unitId    String?  @unique
+  leases    Lease[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenantOf  Property @relation(fields: [propertyId], references: [id])
+  propertyId String
+}
+
+model Property {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  units       Unit[]
+  tenants     Tenant[]
+  managerId   String
+  manager     User     @relation(fields: [managerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+}
+
+model Unit {
+  id         String   @id @default(cuid())
+  name       String
+  floor      Int
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  tenant     Tenant?
+  leases     Lease[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Lease {
+  id          String   @id @default(cuid())
+  startDate   DateTime
+  endDate     DateTime
+  rentAmount  Float
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  unitId      String
+  unit        Unit     @relation(fields: [unitId], references: [id])
+  payments    Payment[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  leaseId   String
+  lease     Lease    @relation(fields: [leaseId], references: [id])
+  amount    Float
+  status    String   // paid, pending, failed
+  method    String   // stripe, paypal, etc.
+  paidAt    DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  properties Property[]
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  users     User[]
+  properties Property[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  SUPER_ADMIN
+  COMPANY_ADMIN
+  PROPERTY_MANAGER
+  TENANT
+}
