@@ -7,46 +7,6 @@ import prisma from "../config/db";
  * Create a new Property
  * Only COMPANY_ADMIN or SUPER_ADMIN can create
  */
-// export const createProperty = async (req: AuthRequest, res: Response) => {
-//   try {
-//     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
-
-//     const { name, address, managerId, companyId } = req.body;
-
-
-
-//     // Only SUPER_ADMIN can create property for any company
-//     // COMPANY_ADMIN can only create for their own company
-//     if (
-//       req.user.role === "COMPANY_ADMIN" &&
-//       companyId !== req.user.companyId
-//     ) {
-        
-//       return res.status(403).json({
-//         message: "Forbidden: COMPANY_ADMIN can create property only for their company",
-//       });
-//     }
-    
-
-//     const property = await prisma.property.create({
-//       data: {
-//         name,
-//         address,
-//         managerId,
-//         companyId,
-//       },
-//     });
-
-//     res.status(201).json(property);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Server Error", error });
-//   }
-// };
-
-
-
-
 
 
 export const createProperty = async (req: AuthRequest, res: Response) => {
