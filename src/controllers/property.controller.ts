@@ -65,13 +65,6 @@ export const createProperty = async (req: AuthRequest, res: Response) => {
 
 
 
-
-
-
-
-
-
-
 /**
  * Get all properties
  */
