@@ -7,6 +7,8 @@ import unitRoutes from "./unit.routes";
 
 const router = Router();
 
+
+
 // Consolidate all routes here
 router.use("/auth", authRoutes);
 router.use("/companies", companyRoutes);

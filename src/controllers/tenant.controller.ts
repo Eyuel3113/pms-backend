@@ -9,7 +9,7 @@ export const createTenant = async (req: AuthRequest, res: Response) => {
 
     const { name, email, phone, unitId } = req.body;
 
-    if (!name || !email || !phone) {
+    if (!name || !email || !phone || !unitId) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
@@ -17,40 +17,40 @@ export const createTenant = async (req: AuthRequest, res: Response) => {
     const existing = await prisma.tenant.findUnique({ where: { email } });
     if (existing) return res.status(400).json({ message: "Email already exists" });
 
-    // If tenant is assigned to a unit, check unit exists
-    let unitCheck = null;
-    if (unitId) {
-      unitCheck = await prisma.unit.findUnique({
-        where: { id: unitId },
-        include: { property: true },
-      });
-      if (!unitCheck) return res.status(404).json({ message: "Unit not found" });
+    // Check unit exists
+    const unit = await prisma.unit.findUnique({
+      where: { id: unitId },
+      include: { property: true },
+    });
+    if (!unit) return res.status(404).json({ message: "Unit not found" });
 
-      // Restrict by role
-      if (req.user.role === "COMPANY_ADMIN" && req.user.companyId !== unitCheck.property.companyId) {
-        return res.status(403).json({ message: "Not allowed" });
-      }
-      if (req.user.role === "PROPERTY_MANAGER" && req.user.id !== unitCheck.property.managerId) {
-        return res.status(403).json({ message: "Not allowed" });
-      }
+    // Role restrictions
+    if (req.user.role === "COMPANY_ADMIN" && req.user.companyId !== unit.property.companyId) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
+    if (req.user.role === "PROPERTY_MANAGER" && req.user.id !== unit.property.managerId) {
+      return res.status(403).json({ message: "Not allowed" });
     }
 
-   const tenant = await prisma.tenant.create({
-  data: {
-    name,
-    email,
-    phone,
-    tenantOf: {
-      connect: { id: unitId }, // 👈 connect relation
-    },
-  },
-});
+    // Create tenant — pass propertyId instead of tenantOf
+    const tenant = await prisma.tenant.create({
+      data: {
+        name,
+        email,
+        phone,
+        unitId: unit.id,
+        propertyId: unit.propertyId, // 👈 connect to property via foreign key
+      },
+    });
 
     res.status(201).json(tenant);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Server Error", error });
   }
 };
+
+
 
 // ---------------- Get All Tenants ----------------
 export const getTenants = async (req: AuthRequest, res: Response) => {
