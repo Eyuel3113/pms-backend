@@ -8,7 +8,7 @@ const router = Router();
  * @swagger
  * tags:
  *   name: Property
- *   description: Property management
+ *   description: Property management endpoints
  */
 
 /**
@@ -50,16 +50,157 @@ router.post( "/", authMiddleware(["SUPER_ADMIN", "COMPANY_ADMIN"]), createProper
 
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     Property:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         name:
+ *           type: string
+ *         address:
+ *           type: string
+ *         managerId:
+ *           type: string
+ *         companyId:
+ *           type: string
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *         manager:
+ *           $ref: '#/components/schemas/User'
+ *         company:
+ *           $ref: '#/components/schemas/Company'
+ *         units:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Unit'
+ *         tenants:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Tenant'
+ * 
+ *     User:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         name:
+ *           type: string
+ *         email:
+ *           type: string
+ *         role:
+ *           type: string
+ * 
+ *     Company:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         name:
+ *           type: string
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ * 
+ *     Unit:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         name:
+ *           type: string
+ *         floor:
+ *           type: string
+ *         propertyId:
+ *           type: string
+ * 
+ *     Tenant:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         name:
+ *           type: string
+ *         email:
+ *           type: string
+ *         phone:
+ *           type: string
+ *         unitId:
+ *           type: string
+ * 
  * /property:
  *   get:
  *     summary: Get all properties
  *     tags: [Property]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of items per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search by property name
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [name, createdAt, updatedAt]
+ *           default: createdAt
+ *         description: Field to sort by
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *         description: Sort order
  *     responses:
  *       200:
  *         description: List of properties
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Property'
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                     page:
+ *                       type: integer
+ *                     lastPage:
+ *                       type: integer
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
  */
+
 
 
 

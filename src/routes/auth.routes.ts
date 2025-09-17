@@ -64,10 +64,10 @@ router.post("/register", register);
  *             properties:
  *               email:
  *                 type: string
- *                 example: "john@example.com"
+ *                 example: "abi@gmail.com"
  *               password:
  *                 type: string
- *                 example: "strongPassword123"
+ *                 example: "123456"
  *     responses:
  *       200:
  *         description: Login successful, returns JWT token

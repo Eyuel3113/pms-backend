@@ -1,6 +1,7 @@
 // src/controllers/propertyController.ts
 import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth";
+import { Prisma } from "@prisma/client";
 import prisma from "../config/db";
 
 /**
@@ -70,18 +71,55 @@ export const createProperty = async (req: AuthRequest, res: Response) => {
  */
 export const getProperties = async (req: AuthRequest, res: Response) => {
   try {
-    let properties;
-    if (req.user?.role === "SUPER_ADMIN") {
-      properties = await prisma.property.findMany({
-        include: { manager: true, company: true, units: true, tenants: true },
-      });
-    } else {
-      properties = await prisma.property.findMany({
-        where: { companyId: req.user?.companyId },
-        include: { manager: true, company: true, units: true, tenants: true },
-      });
+    const { page = "1", limit = "10", search = "", sortBy = "createdAt", order = "desc" } = req.query;
+
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+
+    // Build search filter
+    const where: Prisma.PropertyWhereInput = search
+      ? {
+          name: {
+            contains: search as string,
+            mode: "insensitive", // case-insensitive search
+          },
+        }
+      : {};
+
+    // Restrict for non-super-admin users
+    if (req.user?.role !== "SUPER_ADMIN") {
+      Object.assign(where, { companyId: req.user?.companyId });
     }
-    res.json(properties);
+
+    // Validate sortable fields
+    const sortableFields: Record<string, keyof Prisma.PropertyOrderByWithRelationInput> = {
+      name: "name",
+      createdAt: "createdAt",
+      updatedAt: "updatedAt",
+    };
+    const sortField = sortableFields[sortBy as string] || "createdAt";
+
+    // Fetch properties
+    const properties = await prisma.property.findMany({
+      where,
+      skip: (pageNum - 1) * limitNum,
+      take: limitNum,
+      orderBy: {
+        [sortField]: order === "desc" ? "desc" : "asc",
+      },
+      include: { manager: true, company: true, units: true, tenants: true },
+    });
+
+    const total = await prisma.property.count({ where });
+
+    res.json({
+      data: properties,
+      meta: {
+        total,
+        page: pageNum,
+        lastPage: Math.ceil(total / limitNum),
+      },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error", error });

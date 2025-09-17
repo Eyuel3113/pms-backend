@@ -9,7 +9,7 @@ const router = Router();
  * @swagger
  * tags:
  *   name: Units
- *   description: Unit management
+ *   description: Unit management endpoints
  */
 
 /**
@@ -57,10 +57,63 @@ router.post("/", authMiddleware(["COMPANY_ADMIN", "PROPERTY_MANAGER"]), createUn
  *     tags: [Units]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of items per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term to filter units by name or property name
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           default: createdAt
+ *           enum: [id, name, createdAt, updatedAt]
+ *         description: Field to sort by
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           default: desc
+ *           enum: [asc, desc]
+ *         description: Sort order (ascending or descending)
  *     responses:
  *       200:
  *         description: List of units
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Unit'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
  */
+
 
 
 // Get all units (accessible to SUPER_ADMIN, COMPANY_ADMIN, PROPERTY_MANAGER)

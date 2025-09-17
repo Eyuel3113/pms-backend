@@ -55,35 +55,63 @@ export const getUnits = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
-    let units;
-    if (req.user.role === "SUPER_ADMIN") {
-      // Super admin sees all units
-      units = await prisma.unit.findMany({
-        include: { property: true, tenant: true, leases: true },
-      });
-    } else if (req.user.role === "COMPANY_ADMIN") {
-      // Company admin sees units only for their company
-      units = await prisma.unit.findMany({
-        where: { property: { companyId: req.user.companyId } },
-        include: { property: true, tenant: true, leases: true },
-      });
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      sortBy = "createdAt",
+      sortOrder = "desc",
+    } = req.query as any;
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    // Base filter depending on role
+    let where: any = {};
+
+    if (req.user.role === "COMPANY_ADMIN") {
+      where = { property: { companyId: req.user.companyId } };
     } else if (req.user.role === "PROPERTY_MANAGER") {
-      // Property manager sees units only for properties they manage
-      units = await prisma.unit.findMany({
-        where: { property: { managerId: req.user.id } },
-        include: { property: true, tenant: true, leases: true },
-      });
-    } else {
-      // Tenant cannot access units
+      where = { property: { managerId: req.user.id } };
+    } else if (req.user.role === "TENANT") {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    res.status(200).json(units);
+    // Add search filter
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { property: { is: { name: { contains: search, mode: "insensitive" } } } },
+      ];
+    }
+
+    // Fetch data
+    const [units, total] = await Promise.all([
+      prisma.unit.findMany({
+        where,
+        skip,
+        take: Number(limit),
+        orderBy: { [sortBy]: sortOrder },
+        include: { property: true, tenant: true, leases: true },
+      }),
+      prisma.unit.count({ where }),
+    ]);
+
+    res.status(200).json({
+      data: units,
+      pagination: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / Number(limit)),
+      },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error", error });
   }
 };
+
+
 
 // ---------------- Get Single Unit ----------------
 export const getUnitById = async (req: AuthRequest, res: Response) => {

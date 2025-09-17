@@ -2,6 +2,7 @@
 import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth";
 import prisma from "../config/db";
+import { Prisma } from "@prisma/client";
 
 /**
  * Create a new company
@@ -44,16 +45,53 @@ export const createCompany = async (req: AuthRequest, res: Response) => {
  */
 export const getCompanies = async (req: AuthRequest, res: Response) => {
   try {
-    let companies;
-    if (req.user?.role === "SUPER_ADMIN") {
-      companies = await prisma.company.findMany();
-    } else {
-      // COMPANY_ADMIN sees only their company
-      companies = await prisma.company.findMany({
-        where: { id: req.user?.companyId },
-      });
+    const { page = "1", limit = "10", search = "", sortBy = "createdAt", order = "desc" } = req.query;
+
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+
+    // Build search filter
+    const where: Prisma.CompanyWhereInput = search
+      ? {
+          name: {
+            contains: search as string,
+            mode: "insensitive",
+          },
+        }
+      : {};
+
+    // Only SUPER_ADMIN sees all, others only their own company
+    if (req.user?.role !== "SUPER_ADMIN") {
+      Object.assign(where, { id: req.user?.companyId });
     }
-    res.json(companies);
+
+    // Validate sort field
+    const sortableFields: Record<string, keyof Prisma.CompanyOrderByWithRelationInput> = {
+  name: "name",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt",
+};
+   const sortField = sortableFields[sortBy as string] || "createdAt";
+
+    const companies = await prisma.company.findMany({
+      where,
+      skip: (pageNum - 1) * limitNum,
+      take: limitNum,
+      orderBy: {
+    [sortField]: order === "desc" ? "desc" : "asc",
+  },
+    });
+
+    const total = await prisma.company.count({ where });
+
+    res.json({
+      data: companies,
+      meta: {
+        total,
+        page: pageNum,
+        lastPage: Math.ceil(total / limitNum),
+      },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server Error", error });

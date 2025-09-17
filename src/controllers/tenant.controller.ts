@@ -1,5 +1,6 @@
 import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth";
+import { Prisma } from "@prisma/client";
 import prisma from "../config/db";
 
 // ---------------- Create Tenant ----------------
@@ -53,16 +54,77 @@ export const createTenant = async (req: AuthRequest, res: Response) => {
 
 
 // ---------------- Get All Tenants ----------------
+
+
 export const getTenants = async (req: AuthRequest, res: Response) => {
   try {
+    const {
+      page = "1",
+      limit = "10",
+      search = "",
+      sortBy = "createdAt",
+      order = "desc",
+    } = req.query;
+
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+
+    // Build search filter (search by name, email, or phone)
+    const where: Prisma.TenantWhereInput = search
+      ? {
+          OR: [
+            { name: { contains: search as string, mode: "insensitive" } },
+            { email: { contains: search as string, mode: "insensitive" } },
+            { phone: { contains: search as string, mode: "insensitive" } },
+          ],
+        }
+      : {};
+
+    // Validate allowed sortable fields
+    const sortableFields: Record<string, keyof Prisma.TenantOrderByWithRelationInput> =
+      {
+        name: "name",
+        email: "email",
+        phone: "phone",
+        createdAt: "createdAt",
+        updatedAt: "updatedAt",
+      };
+
+    const sortField = sortableFields[sortBy as string] || "createdAt";
+
+    // Fetch tenants with pagination, search, and sort
     const tenants = await prisma.tenant.findMany({
-      include: { unit: { include: { property: true } } },
+      where,
+      skip: (pageNum - 1) * limitNum,
+      take: limitNum,
+      orderBy: {
+        [sortField]: order === "desc" ? "desc" : "asc",
+      },
+      include: {
+        unit: {
+          include: {
+            property: true,
+          },
+        },
+      },
     });
-    res.status(200).json(tenants);
+
+    const total = await prisma.tenant.count({ where });
+
+    res.status(200).json({
+      data: tenants,
+      meta: {
+        total,
+        page: pageNum,
+        lastPage: Math.ceil(total / limitNum),
+      },
+    });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Server Error", error });
   }
 };
+
 
 // ---------------- Get Single Tenant ----------------
 export const getTenantById = async (req: AuthRequest, res: Response) => {
