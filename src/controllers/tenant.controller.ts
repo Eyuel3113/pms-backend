@@ -39,7 +39,7 @@ export const createTenant = async (req: AuthRequest, res: Response) => {
         email,
         phone,
         unitId: unit.id,
-        propertyId: unit.propertyId, // 👈 connect to property via foreign key
+        propertyId: unit.propertyId, //  connect to property via foreign key
       },
     });
 
