@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { register, login } from "../controllers/auth.controller";
+import { register, login,verifyEmail } from "../controllers/auth.controller";
 
 const router = Router();
 
@@ -84,5 +84,45 @@ router.post("/register", register);
  */
 
 router.post("/login", login);
+
+
+
+/**
+ * @swagger
+ * /auth/verify/{token}:
+ *   get:
+ *     summary: Verify user email
+ *     description: Verifies a user's email using the token sent to their email.
+ *     tags:
+ *       - Auth
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The verification token from the email link
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               example:
+ *                 message: "Email verified successfully"
+ *       400:
+ *         description: Invalid or expired token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               example:
+ *                 message: "Invalid or expired verification token"
+ *       500:
+ *         description: Server error
+ */
+
+router.get("/verify-email", verifyEmail);
 
 export default router;
