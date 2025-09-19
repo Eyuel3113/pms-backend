@@ -1,7 +1,7 @@
-// src/controllers/companyController.ts
 import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth";
 import prisma from "../config/db";
+import { logActivity } from "../utils/activityLog";
 import { Prisma } from "@prisma/client";
 
 /**
@@ -31,6 +31,15 @@ export const createCompany = async (req: AuthRequest, res: Response) => {
 
     const company = await prisma.company.create({
       data: { name },
+    });
+
+  // Log activity
+    await logActivity({
+      userId: req.user.id,
+      action: "COMPANY_CREATED",
+      entity: "Company",
+      entityId: company.id,
+      companyId: req.user.companyId || undefined,
     });
 
     res.status(201).json(company);
@@ -168,6 +177,15 @@ export const deleteCompany = async (req: AuthRequest, res: Response) => {
     await prisma.company.delete({
       where: { id },
     });
+
+   // Log activity
+    await logActivity({
+      userId: req.user.id,
+      action: "COMPANY_DELETED",
+      entity: "Company",
+      entityId: id,
+    });
+
 
     res.json({ message: "Company deleted successfully" });
   } catch (error: any) {

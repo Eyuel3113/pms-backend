@@ -19,6 +19,9 @@ model Tenant {
   updatedAt  DateTime @updatedAt
   tenantOf   Property @relation(fields: [propertyId], references: [id])
   propertyId String
+
+  notifications Notification[]
+  activityLogs  ActivityLog[]
 }
 
 model Property {
@@ -33,6 +36,8 @@ model Property {
   updatedAt DateTime @updatedAt
   companyId String
   company   Company  @relation(fields: [companyId], references: [id])
+
+  activityLogs ActivityLog[]
 }
 
 model Unit {
@@ -46,7 +51,7 @@ model Unit {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  @@unique([name, floor, propertyId]) // <- compound unique constraint
+  @@unique([name, floor, propertyId]) // compound unique constraint
 }
 
 model Lease {
@@ -61,6 +66,8 @@ model Lease {
   payments   Payment[]
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
+
+  activityLogs ActivityLog[]
 }
 
 model Payment {
@@ -73,6 +80,8 @@ model Payment {
   paidAt    DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  activityLogs ActivityLog[]
 }
 
 model User {
@@ -88,6 +97,9 @@ model User {
   updatedAt         DateTime   @updatedAt
   Property          Property[]
   Company           Company?   @relation(fields: [companyId], references: [id])
+
+  notifications Notification[]
+  activityLogs  ActivityLog[]
 }
 
 model Company {
@@ -97,6 +109,42 @@ model Company {
   properties Property[]
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
+
+  activityLogs ActivityLog[]
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  message   String
+  type      String // e.g., "PAYMENT_DUE", "LEASE_ENDING", "SYSTEM_ALERT"
+  read      Boolean  @default(false)
+  userId    String?
+  tenantId  String?
+  createdAt DateTime @default(now())
+
+  user   User?   @relation(fields: [userId], references: [id])
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  action     String // e.g., "CREATED_PROPERTY", "UPDATED_LEASE", "PAID_RENT"
+  entity     String // e.g., "Property", "Lease", "Payment"
+  entityId   String? // ID of the related entity
+  userId     String?
+  tenantId   String?
+  propertyId String?
+  leaseId    String?
+  paymentId  String?
+  companyId  String?
+  createdAt  DateTime @default(now())
+
+  user     User?     @relation(fields: [userId], references: [id])
+  tenant   Tenant?   @relation(fields: [tenantId], references: [id])
+  property Property? @relation(fields: [propertyId], references: [id])
+  lease    Lease?    @relation(fields: [leaseId], references: [id])
+  payment  Payment?  @relation(fields: [paymentId], references: [id])
+  company  Company?  @relation(fields: [companyId], references: [id])
 }
 
 enum Role {

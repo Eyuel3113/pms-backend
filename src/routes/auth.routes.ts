@@ -1,5 +1,7 @@
 import { Router } from "express";
-import { register, login,verifyEmail } from "../controllers/auth.controller";
+import { register, login,verifyEmail,getAuditLogs } from "../controllers/auth.controller";
+import { authMiddleware } from "../middlewares/auth";
+
 
 const router = Router();
 
@@ -123,6 +125,102 @@ router.post("/login", login);
  *         description: Server error
  */
 
+
 router.get("/verify-email", verifyEmail);
+
+/**
+ * @swagger
+ * /auth/audit-log:
+ *   get:
+ *     summary: Get audit logs with pagination, sorting, and date filters
+ *     tags: [ Auth ]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of logs per page
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *         description: Sort order by createdAt
+ *       - in: query
+ *         name: from
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter logs from this date (YYYY-MM-DD)
+ *       - in: query
+ *         name: to
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter logs until this date (YYYY-MM-DD)
+ *     responses:
+ *       200:
+ *         description: List of audit logs with pagination
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 page:
+ *                   type: integer
+ *                   example: 1
+ *                 limit:
+ *                   type: integer
+ *                   example: 10
+ *                 total:
+ *                   type: integer
+ *                   example: 50
+ *                 totalPages:
+ *                   type: integer
+ *                   example: 5
+ *                 logs:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         example: "clxyz123abc"
+ *                       action:
+ *                         type: string
+ *                         example: "USER_LOGIN"
+ *                       userId:
+ *                         type: string
+ *                         example: "user123"
+ *                       companyId:
+ *                         type: string
+ *                         example: "company123"
+ *                       propertyId:
+ *                         type: string
+ *                         example: "property123"
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2025-09-19T10:30:00.000Z"
+ *       401:
+ *         description: Unauthorized (missing or invalid token)
+ *       500:
+ *         description: Server error
+ */
+
+router.get("/audit-log",authMiddleware(["SUPER_ADMIN", "COMPANY_ADMIN", "PROPERTY_MANAGER","TENANT"]),getAuditLogs);
 
 export default router;

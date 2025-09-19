@@ -1,5 +1,6 @@
 import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth";
+import { logActivity } from "../utils/activityLog";
 import { Prisma } from "@prisma/client";
 import prisma from "../config/db";
 
@@ -43,6 +44,18 @@ export const createTenant = async (req: AuthRequest, res: Response) => {
         propertyId: unit.propertyId, //  connect to property via foreign key
       },
     });
+
+
+    // Tenant registration
+async function registerTenant(userId: string, tenantId: string) {
+  await logActivity({
+    userId:req.user.id,
+    tenantId,
+    action: "TENANT_REGISTERED",
+    entity: "Tenant",
+    entityId: tenantId,
+  });
+}
 
     res.status(201).json(tenant);
   } catch (error) {
@@ -170,6 +183,19 @@ export const updateTenant = async (req: AuthRequest, res: Response) => {
       data: { name, email, phone, unitId: unitId || null },
     });
 
+
+// Tenant info update activity log
+async function updateTenant(userId: string, tenantId: string) {
+  await logActivity({
+    userId:req.user.id,
+    tenantId,
+    action: "TENANT_UPDATED",
+    entity: "Tenant",
+    entityId: tenantId,
+  });
+}
+
+
     res.status(200).json(updated);
   } catch (error) {
     res.status(500).json({ message: "Server Error", error });
@@ -204,6 +230,17 @@ export const deleteTenant = async (req: AuthRequest, res: Response) => {
     }
 
     await prisma.tenant.delete({ where: { id } });
+
+
+        // Log activity
+    await logActivity({
+      userId:req.user.id,
+      tenantId: tenant.id,
+      action: "TENANT_DELETED",
+      entity: "Tenant",
+      entityId: tenant.id,
+      propertyId: tenant.propertyId, 
+    });
     res.status(200).json({ message: "Tenant deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server Error", error });

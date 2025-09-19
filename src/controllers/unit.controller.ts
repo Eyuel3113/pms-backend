@@ -1,5 +1,6 @@
 import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth";
+import { logActivity } from "../utils/activityLog";
 import prisma from "../config/db";
 
 // ---------------- Create Unit ----------------
@@ -42,6 +43,18 @@ export const createUnit = async (req: AuthRequest, res: Response) => {
         property: { connect: { id: propertyId } },
       },
     });
+
+
+// Unit creation
+async function createUnit(userId: string, unitId: string, propertyId: string) {
+  await logActivity({
+    userId:req.user.id,
+    propertyId,
+    action: "UNIT_CREATED",
+    entity: "Unit",
+    entityId: unitId,
+  });
+}
 
     res.status(201).json(unit);
   } catch (error) {
@@ -187,6 +200,15 @@ export const updateUnit = async (req: AuthRequest, res: Response) => {
       data: { name, floor },
     });
 
+    async function updateUnit(userId: string, propertyId: string) {
+  await logActivity({
+    userId:req.user.id,
+    action: "UNIT_UPDATED",
+    entity: "Unit",
+    entityId: id,
+  });
+}
+
     res.status(200).json(updated);
   } catch (error: any) {
     if (error.code === "P2002") {
@@ -220,6 +242,19 @@ export const deleteUnit = async (req: AuthRequest, res: Response) => {
     if (!allowed) return res.status(403).json({ message: "Forbidden: Cannot delete this unit" });
 
     await prisma.unit.delete({ where: { id } });
+
+    // Log activity
+    await logActivity({
+      userId:id,
+      propertyId: unit.propertyId,
+      action: "UNIT_DELETED",
+      entity: "Unit",
+      entityId: unit.id,
+    });
+
+
+
+
     res.status(200).json({ message: "Unit deleted successfully" });
   } catch (error) {
     console.error(error);

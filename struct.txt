@@ -26,6 +26,11 @@ backend/
 │  │  └─ notification.service.ts
 │  ├─ utils/
 │  │  └─ helpers.ts
+      └─ notification.ts
+      └─ token.ts
+      └─ mail.ts
+      └─ activityLog.ts
+
 │  ├─ app.ts
 │  └─ server.ts
 ├─ .env

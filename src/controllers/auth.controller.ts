@@ -2,7 +2,9 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { sendEmail } from "../services/email.service";
-import { generateVerificationToken, verifyToken } from "../utils/token";
+import { generateVerificationToken, verifyToken ,generateAuthToken} from "../utils/token";
+import { AuthRequest } from "../middlewares/auth";
+import { logActivity } from "../utils/activityLog";
 import prisma from "../config/db";
 import dotenv from "dotenv";
 
@@ -85,14 +87,36 @@ export const login = async (req: Request, res: Response) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid password" });
 
-    const token = jwt.sign({ id: user.id, role: user.role , companyId:user.companyId }, JWT_SECRET, { expiresIn: "7d" });
+const userWithProperties = await prisma.user.findUnique({
+  where: { id: user.id },
+  include: { Property: { select: { id: true } } },
+});
+    const token = generateAuthToken({
+  id: user.id,
+  role: user.role,
+  companyId: user.companyId,
+  propertyIds: userWithProperties?.Property.map((p) => p.id) || [],
+});
 
+
+  // Log activity
+    await logActivity({
+      userId: user.id,
+      action: "USER_LOGIN",
+      entity: "User",
+      entityId: user.id,
+      companyId: user.companyId || undefined,
+    });
+
+
+    
     res.status(200).json({ user: { id: user.id, name: user.name, email: user.email, role: user.role }, token });
   } catch (error) {
     res.status(500).json({ message: "Server Error", error });
   }
 };
 
+//verify email
 
 export const verifyEmail = async (req: Request, res: Response) => {
   try {
@@ -115,3 +139,56 @@ export const verifyEmail = async (req: Request, res: Response) => {
     res.status(400).json({ message: "Invalid or expired token", error });
   }
 };
+
+// activity log
+
+export const getAuditLogs = async (req: AuthRequest, res: Response) => {
+  try {
+    const { role, id: userId, companyId, propertyIds } = req.user!;
+    const { page = "1", limit = "10", sortBy = "desc", from, to } = req.query;
+
+    const pageNumber = parseInt(page as string, 10);
+    const pageSize = parseInt(limit as string, 10);
+
+    // Date filter
+    const dateFilter: any = {};
+    if (from || to) {
+      dateFilter.createdAt = {};
+      if (from) dateFilter.createdAt.gte = new Date(from as string);
+      if (to) dateFilter.createdAt.lte = new Date(to as string);
+    }
+
+    let whereClause: any = { ...dateFilter };
+
+    if (role === "COMPANY_ADMIN") {
+      whereClause.companyId = companyId;
+    } else if (role === "PROPERTY_MANAGER") {
+      whereClause.propertyId = { in: propertyIds };
+    } else if (role !== "SUPER_ADMIN") {
+      whereClause.userId = userId;
+    }
+
+    const [logs, total] = await Promise.all([
+      prisma.activityLog.findMany({
+        where: whereClause,
+        skip: (pageNumber - 1) * pageSize,
+        take: pageSize,
+        orderBy: { createdAt: sortBy as "asc" | "desc" },
+      }),
+      prisma.activityLog.count({ where: whereClause }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      page: pageNumber,
+      limit: pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize),
+      logs,
+    });
+  } catch (error) {
+    console.error("Error fetching audit logs:", error);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+

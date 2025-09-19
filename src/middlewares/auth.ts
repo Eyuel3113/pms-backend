@@ -29,3 +29,22 @@ export const authMiddleware = (roles: string[] = []) => {
     }
   };
 };
+
+
+
+// import { verifyToken } from "../utils/token";
+
+// export const authMiddleware = (req, res, next) => {
+//   const header = req.headers.authorization;
+//   if (!header) return res.status(401).json({ message: "No token" });
+
+//   const token = header.split(" ")[1];
+//   try {
+//     const decoded = verifyToken(token);
+//     req.user = decoded; // { id, role, companyId, propertyIds }
+//     next();
+//   } catch (err) {
+//     return res.status(401).json({ message: "Invalid token" });
+//   }
+// };
+

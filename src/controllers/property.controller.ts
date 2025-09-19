@@ -1,6 +1,7 @@
 // src/controllers/propertyController.ts
 import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth";
+import { logActivity } from "../utils/activityLog";
 import { Prisma } from "@prisma/client";
 import prisma from "../config/db";
 
@@ -56,6 +57,17 @@ export const createProperty = async (req: AuthRequest, res: Response) => {
         companyId: assignedCompanyId,
       },
     });
+
+
+    // Property creation activity log
+async function createProperty(userId: string, propertyId: string) {
+  await logActivity({
+    userId:req.user.id,
+    action: "PROPERTY_CREATED",
+    entity: "Property",
+    entityId: propertyId,
+  });
+}
 
     return res.status(201).json(property);
   } catch (error) {
@@ -175,6 +187,16 @@ export const updateProperty = async (req: AuthRequest, res: Response) => {
       data: { name, address, managerId },
     });
 
+// Property update activity log
+async function updateProperty(userId: string, propertyId: string) {
+  await logActivity({
+    userId,
+    action: "PROPERTY_UPDATED",
+    entity: "Property",
+    entityId: propertyId,
+  });
+}
+
     res.json(updatedProperty);
   } catch (error) {
     console.error(error);
@@ -201,6 +223,17 @@ export const deleteProperty = async (req: AuthRequest, res: Response) => {
     }
 
     await prisma.property.delete({ where: { id } });
+
+// Deleting a property
+async function deleteProperty(adminId: string, propertyId: string) {
+  await logActivity({
+    userId: req.user.id,
+    action: "PROPERTY_DELETED",
+    entity: "Property",
+    entityId: propertyId,
+  });
+}
+
 
     res.json({ message: "Property deleted successfully" });
   } catch (error) {
