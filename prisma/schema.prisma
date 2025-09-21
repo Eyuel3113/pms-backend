@@ -8,20 +8,22 @@ datasource db {
 }
 
 model Tenant {
-  id         String   @id @default(cuid())
-  name       String
-  email      String   @unique
-  phone      String
-  unit       Unit?    @relation(fields: [unitId], references: [id])
-  unitId     String?  @unique
-  leases     Lease[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  tenantOf   Property @relation(fields: [propertyId], references: [id])
-  propertyId String
+  id        String  @id @default(cuid())
+  userId    String  @unique // ensure one-to-one
+  unitId    String? @unique
+  companyId String
 
+  // Relations
+  user    User    @relation(fields: [userId], references: [id]) // owning side
+  unit    Unit?   @relation(fields: [unitId], references: [id])
+  company Company @relation(fields: [companyId], references: [id])
+  leases  Lease[]
+
+  // Back-relations
   notifications Notification[]
   activityLogs  ActivityLog[]
+  Property      Property?      @relation(fields: [propertyId], references: [id])
+  propertyId    String?
 }
 
 model Property {
@@ -55,17 +57,22 @@ model Unit {
 }
 
 model Lease {
-  id         String    @id @default(cuid())
+  id         String      @id @default(cuid())
+  tenantId   String
+  unitId     String
   startDate  DateTime
   endDate    DateTime
   rentAmount Float
-  tenantId   String
-  tenant     Tenant    @relation(fields: [tenantId], references: [id])
-  unitId     String
-  unit       Unit      @relation(fields: [unitId], references: [id])
-  payments   Payment[]
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  deposit    Float? // optional
+  status     LeaseStatus @default(ACTIVE)
+
+  // Relations
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  unit     Unit      @relation(fields: [unitId], references: [id])
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   activityLogs ActivityLog[]
 }
@@ -85,18 +92,21 @@ model Payment {
 }
 
 model User {
-  id                String     @id @default(cuid())
+  id                String   @id @default(cuid())
   name              String
-  email             String     @unique
+  email             String   @unique
   password          String
   role              String
   companyId         String?
-  isVerified        Boolean    @default(false)
+  isVerified        Boolean  @default(false)
   verificationToken String?
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
-  Property          Property[]
-  Company           Company?   @relation(fields: [companyId], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  Property Property[]
+  Company  Company?   @relation(fields: [companyId], references: [id])
+  Tenant   Tenant? // just back-relation, no fields/references here
 
   notifications Notification[]
   activityLogs  ActivityLog[]
@@ -107,6 +117,7 @@ model Company {
   name       String
   users      User[]
   properties Property[]
+  tenants    Tenant[]
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 
@@ -128,9 +139,9 @@ model Notification {
 
 model ActivityLog {
   id         String   @id @default(cuid())
-  action     String // e.g., "CREATED_PROPERTY", "UPDATED_LEASE", "PAID_RENT"
-  entity     String // e.g., "Property", "Lease", "Payment"
-  entityId   String? // ID of the related entity
+  action     String     // e.g., "CREATED_PROPERTY", "UPDATED_LEASE", "PAID_RENT"
+  entity     String     // e.g., "Property", "Lease", "Payment"
+  entityId   String?    // ID of the related entity
   userId     String?
   tenantId   String?
   propertyId String?
@@ -152,4 +163,10 @@ enum Role {
   COMPANY_ADMIN
   PROPERTY_MANAGER
   TENANT
+}
+
+enum LeaseStatus {
+  ACTIVE
+  EXPIRED
+  TERMINATED
 }

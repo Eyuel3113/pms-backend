@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {
-  createUnit, getUnits, getUnitById, updateUnit, deleteUnit, } from "../controllers/unit.controller";
+  createUnit,  updateUnit, deleteUnit,getAllUnits, } from "../controllers/unit.controller";
 import { authMiddleware } from "../middlewares/auth";
 
 const router = Router();
@@ -117,7 +117,7 @@ router.post("/", authMiddleware(["COMPANY_ADMIN", "PROPERTY_MANAGER"]), createUn
 
 
 // Get all units (accessible to SUPER_ADMIN, COMPANY_ADMIN, PROPERTY_MANAGER)
-router.get("/", authMiddleware(["SUPER_ADMIN", "COMPANY_ADMIN", "PROPERTY_MANAGER"]), getUnits);
+router.get("/", authMiddleware(["SUPER_ADMIN", "COMPANY_ADMIN", "PROPERTY_MANAGER"]), getAllUnits);
 
 
 /**
@@ -142,7 +142,7 @@ router.get("/", authMiddleware(["SUPER_ADMIN", "COMPANY_ADMIN", "PROPERTY_MANAGE
  */
 
 // Get unit by ID
-router.get("/:id", authMiddleware(["SUPER_ADMIN", "COMPANY_ADMIN", "PROPERTY_MANAGER"]), getUnitById);
+//router.get("/:id", authMiddleware(["SUPER_ADMIN", "COMPANY_ADMIN", "PROPERTY_MANAGER"]), getUnitById);
 
 /**
  * @swagger

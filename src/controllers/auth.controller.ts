@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { sendEmail } from "../services/email.service";
-import { generateVerificationToken, verifyToken ,generateAuthToken} from "../utils/token";
+import { generateVerificationToken, verifyVerificationToken ,generateAuthToken} from "../utils/token";
 import { AuthRequest } from "../middlewares/auth";
 import { logActivity } from "../utils/activityLog";
 import prisma from "../config/db";
@@ -16,7 +16,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { name, email, password,role,companyId  } = req.body;
+    const { name, email, password,role,companyId,unitId  } = req.body;
 
 
     // Check duplicate email
@@ -28,8 +28,18 @@ export const register = async (req: Request, res: Response) => {
 
     // Create user
     const user = await prisma.user.create({
-      data: { name, email, password:hashedPassword,companyId  ,role, isVerified: false },
+      data: { name, email, password:hashedPassword,companyId  ,role, isVerified: false  },
     });
+
+  if (role === "TENANT") {
+      await prisma.tenant.create({
+        data: {
+          userId: user.id,
+          companyId: companyId, // must exist
+          unitId: unitId , // optional
+        },
+      });
+    }
 
     // Generate verification token
     const token = generateVerificationToken(user.id);
@@ -93,7 +103,7 @@ const userWithProperties = await prisma.user.findUnique({
 });
     const token = generateAuthToken({
   id: user.id,
-  role: user.role,
+  role: user.role.trim(),
   companyId: user.companyId,
   propertyIds: userWithProperties?.Property.map((p) => p.id) || [],
 });
@@ -123,7 +133,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
     const { token } = req.query;
     if (!token) return res.status(400).json({ message: "Token missing" });
 
-    const payload: any = verifyToken(token as string);
+    const payload: any = verifyVerificationToken(token as string);
 
     const user = await prisma.user.update({
       where: { id: payload.userId },
