@@ -7,40 +7,51 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+//  =================   Tenant  ===============
+
 model Tenant {
   id        String  @id @default(cuid())
-  userId    String  @unique // ensure one-to-one
+  userId    String  @unique
   unitId    String? @unique
   companyId String
 
-  // Relations
-  user    User    @relation(fields: [userId], references: [id]) // owning side
-  unit    Unit?   @relation(fields: [unitId], references: [id])
-  company Company @relation(fields: [companyId], references: [id])
-  leases  Lease[]
+  propertyId String?
+  property   Property? @relation("PropertyTenants", fields: [propertyId], references: [id])
 
-  // Back-relations
+  // Relations
+  user     User      @relation(fields: [userId], references: [id])
+  unit     Unit?     @relation(fields: [unitId], references: [id])
+  company  Company   @relation(fields: [companyId], references: [id])
+  leases   Lease[]
+  invoices Invoice[]
+  payments Payment[]
+
   notifications Notification[]
   activityLogs  ActivityLog[]
-  Property      Property?      @relation(fields: [propertyId], references: [id])
-  propertyId    String?
 }
 
+//  =================   Property  ===============
+
 model Property {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   name      String
   address   String
   units     Unit[]
-  tenants   Tenant[]
   managerId String
-  manager   User     @relation(fields: [managerId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  manager   User    @relation(fields: [managerId], references: [id])
   companyId String
-  company   Company  @relation(fields: [companyId], references: [id])
+  company   Company @relation(fields: [companyId], references: [id])
 
+  tenants  Tenant[]  @relation("PropertyTenants") // must match Tenant.property
+  invoices Invoice[]
+  payments Payment[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   activityLogs ActivityLog[]
 }
+
+//  =================   Unit  ===============
 
 model Unit {
   id         String   @id @default(cuid())
@@ -56,6 +67,8 @@ model Unit {
   @@unique([name, floor, propertyId]) // compound unique constraint
 }
 
+//  =================   Lease  ===============
+
 model Lease {
   id         String      @id @default(cuid())
   tenantId   String
@@ -63,33 +76,63 @@ model Lease {
   startDate  DateTime
   endDate    DateTime
   rentAmount Float
-  deposit    Float? // optional
+  deposit    Float?
   status     LeaseStatus @default(ACTIVE)
 
   // Relations
   tenant   Tenant    @relation(fields: [tenantId], references: [id])
   unit     Unit      @relation(fields: [unitId], references: [id])
+  invoices Invoice[]
   payments Payment[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   activityLogs ActivityLog[]
 }
+
+//  =================   Payment  ===============
 
 model Payment {
-  id        String    @id @default(cuid())
-  leaseId   String
-  lease     Lease     @relation(fields: [leaseId], references: [id])
-  amount    Float
-  status    String // paid, pending, failed
-  method    String // stripe, paypal, etc.
-  paidAt    DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id         String   @id @default(cuid())
+  invoiceId  String
+  leaseId    String?
+  tenantId   String
+  propertyId String
+  amount     Float
+  method     String
+  status     String   @default("COMPLETED")
+  paidAt     DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  invoice  Invoice  @relation(fields: [invoiceId], references: [id])
+  lease    Lease?   @relation(fields: [leaseId], references: [id])
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id]) // <-- now matches Property.payments
 
   activityLogs ActivityLog[]
 }
+
+//  =================   Invoice  ===============
+
+model Invoice {
+  id         String   @id @default(cuid())
+  leaseId    String
+  tenantId   String
+  propertyId String
+  amount     Float
+  status     String   @default("PENDING")
+  dueDate    DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  lease    Lease     @relation(fields: [leaseId], references: [id])
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  property Property  @relation(fields: [propertyId], references: [id]) // <-- now matches Property.invoices
+  payments Payment[]
+}
+
+//  =================   User  ===============
 
 model User {
   id                String   @id @default(cuid())
@@ -112,6 +155,8 @@ model User {
   activityLogs  ActivityLog[]
 }
 
+//  =================   Company  ===============
+
 model Company {
   id         String     @id @default(cuid())
   name       String
@@ -123,6 +168,8 @@ model Company {
 
   activityLogs ActivityLog[]
 }
+
+//  =================   Notification  ===============
 
 model Notification {
   id        String   @id @default(cuid())
@@ -137,11 +184,13 @@ model Notification {
   tenant Tenant? @relation(fields: [tenantId], references: [id])
 }
 
+//  =================   ActivityLog  ===============
+
 model ActivityLog {
   id         String   @id @default(cuid())
-  action     String     // e.g., "CREATED_PROPERTY", "UPDATED_LEASE", "PAID_RENT"
-  entity     String     // e.g., "Property", "Lease", "Payment"
-  entityId   String?    // ID of the related entity
+  action     String
+  entity     String
+  entityId   String?
   userId     String?
   tenantId   String?
   propertyId String?

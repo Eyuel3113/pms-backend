@@ -4,7 +4,8 @@ import companyRoutes from "./company.routes";
 import propertyRoutes from "./property.routes";
 import tenantRoutes from "./tenant.routes";
 import unitRoutes from "./unit.routes";
-import leaseRoute from "./lease.routes"
+import leaseRoute from "./lease.routes";
+import invoiceRoute from "./invoice.routes";
 
 const router = Router();
 
@@ -17,5 +18,7 @@ router.use("/property", propertyRoutes);
 router.use("/unit", unitRoutes);
 router.use("/tenants", tenantRoutes);
 router.use("/lease",leaseRoute);
+router.use("/invoice",invoiceRoute);
+router.use("/payment",leaseRoute);
 
 export default router;
