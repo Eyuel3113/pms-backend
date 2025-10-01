@@ -49,11 +49,18 @@ const router = Router();
  *           format: date-time
  */
 
+/**
+ * @swagger
+ * tags:
+ *   - name: MaintenanceRequest
+ *     description: Endpoints for managing tenant maintenance requests (create, view, update, delete)
+ */
+
 
 
 /**
  * @swagger
- * /maintenance:
+ * /maintaince:
  *   post:
  *     summary: Create maintenance request
  *     tags: [MaintenanceRequest]
@@ -89,7 +96,7 @@ router.post("/", authMiddleware(["TENANT", "PROPERTY_MANAGER", "COMPANY_ADMIN"])
 
 /**
  * @swagger
- * /maintenance:
+ * /maintaince:
  *   get:
  *     summary: Get all maintenance requests
  *     tags: [MaintenanceRequest]
@@ -125,7 +132,7 @@ router.get("/", authMiddleware(["TENANT", "PROPERTY_MANAGER", "COMPANY_ADMIN"]),
 
 /**
  * @swagger
- * /maintenance/{id}:
+ * /maintaince/{id}:
  *   get:
  *     summary: Get a maintenance request by ID
  *     tags: [MaintenanceRequest]
@@ -151,7 +158,7 @@ router.get("/:id", authMiddleware(["TENANT", "PROPERTY_MANAGER", "COMPANY_ADMIN"
 
 /**
  * @swagger
- * /maintenance/{id}:
+ * /maintaince/{id}:
  *   put:
  *     summary: Update a maintenance request
  *     tags: [MaintenanceRequest]
@@ -198,7 +205,7 @@ router.put("/:id", authMiddleware(["TENANT", "PROPERTY_MANAGER", "COMPANY_ADMIN"
 
 /**
  * @swagger
- * /maintenance/{id}:
+ * /maintaince/{id}:
  *   delete:
  *     summary: Delete a maintenance request
  *     tags: [MaintenanceRequest]

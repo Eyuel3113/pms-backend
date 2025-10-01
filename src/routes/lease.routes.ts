@@ -14,7 +14,7 @@ const router = Router();
  * @swagger
  * tags:
  *   name: Lease
- *   description: Lease management
+ *   description: Endpoints for Lease management
  */
 
 /**

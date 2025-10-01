@@ -10,7 +10,7 @@ const router = Router();
  * @swagger
  * tags:
  *   name: Auth
- *   description: Authentication endpoints
+ *   description: Authentication endpoints like(register,login,verify,activitylog and logout)
  */
 
 /**

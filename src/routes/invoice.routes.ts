@@ -5,6 +5,13 @@ import { createPayment } from "../controllers/payment.controller";
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * tags:
+ *   - name: Invoices
+ *     description: Endpoints for managing Invoices (create, view, update, delete)
+ */
+
 // Invoices Create
 
 /**
