@@ -19,12 +19,13 @@ model Tenant {
   property   Property? @relation("PropertyTenants", fields: [propertyId], references: [id])
 
   // Relations
-  user     User      @relation(fields: [userId], references: [id])
-  unit     Unit?     @relation(fields: [unitId], references: [id])
-  company  Company   @relation(fields: [companyId], references: [id])
-  leases   Lease[]
-  invoices Invoice[]
-  payments Payment[]
+  user                User                 @relation(fields: [userId], references: [id])
+  unit                Unit?                @relation(fields: [unitId], references: [id])
+  company             Company              @relation(fields: [companyId], references: [id])
+  leases              Lease[]
+  invoices            Invoice[]
+  payments            Payment[]
+  maintenanceRequests MaintenanceRequest[]
 
   notifications Notification[]
   activityLogs  ActivityLog[]
@@ -42,9 +43,10 @@ model Property {
   companyId String
   company   Company @relation(fields: [companyId], references: [id])
 
-  tenants  Tenant[]  @relation("PropertyTenants") // must match Tenant.property
-  invoices Invoice[]
-  payments Payment[]
+  tenants             Tenant[]             @relation("PropertyTenants") // must match Tenant.property
+  invoices            Invoice[]
+  payments            Payment[]
+  maintenanceRequests MaintenanceRequest[]
 
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -54,15 +56,16 @@ model Property {
 //  =================   Unit  ===============
 
 model Unit {
-  id         String   @id @default(cuid())
-  name       String
-  floor      Int
-  propertyId String
-  property   Property @relation(fields: [propertyId], references: [id])
-  tenant     Tenant?
-  leases     Lease[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                  String               @id @default(cuid())
+  name                String
+  floor               Int
+  propertyId          String
+  property            Property             @relation(fields: [propertyId], references: [id])
+  tenant              Tenant?
+  leases              Lease[]
+  maintenanceRequests MaintenanceRequest[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
   @@unique([name, floor, propertyId]) // compound unique constraint
 }
@@ -151,6 +154,9 @@ model User {
   Company  Company?   @relation(fields: [companyId], references: [id])
   Tenant   Tenant? // just back-relation, no fields/references here
 
+  createdRequests  MaintenanceRequest[] @relation("CreatedRequests")
+  assignedRequests MaintenanceRequest[] @relation("AssignedRequests")
+
   notifications Notification[]
   activityLogs  ActivityLog[]
 }
@@ -167,6 +173,47 @@ model Company {
   updatedAt  DateTime   @updatedAt
 
   activityLogs ActivityLog[]
+}
+
+//  ================== maintainance request==========
+
+model MaintenanceRequest {
+  id          String        @id @default(cuid())
+  title       String
+  description String
+  priority    Priority      @default(MEDIUM)
+  status      RequestStatus @default(PENDING)
+
+  tenantId     String
+  propertyId   String
+  unitId       String?
+  createdById  String // userId of who created (usually Tenant)
+  assignedToId String? // userId of Property Manager or staff
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  property      Property @relation(fields: [propertyId], references: [id])
+  unit          Unit?    @relation(fields: [unitId], references: [id])
+  createdByUser User     @relation("CreatedRequests", fields: [createdById], references: [id])
+  assignedUser  User?    @relation("AssignedRequests", fields: [assignedToId], references: [id])
+
+  activityLogs ActivityLog[]
+}
+
+enum RequestStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
 }
 
 //  =================   Notification  ===============
@@ -187,24 +234,26 @@ model Notification {
 //  =================   ActivityLog  ===============
 
 model ActivityLog {
-  id         String   @id @default(cuid())
-  action     String
-  entity     String
-  entityId   String?
-  userId     String?
-  tenantId   String?
-  propertyId String?
-  leaseId    String?
-  paymentId  String?
-  companyId  String?
-  createdAt  DateTime @default(now())
+  id                   String   @id @default(cuid())
+  action               String
+  entity               String
+  entityId             String?
+  userId               String?
+  tenantId             String?
+  propertyId           String?
+  maintenanceRequestId String?
+  leaseId              String?
+  paymentId            String?
+  companyId            String?
+  createdAt            DateTime @default(now())
 
-  user     User?     @relation(fields: [userId], references: [id])
-  tenant   Tenant?   @relation(fields: [tenantId], references: [id])
-  property Property? @relation(fields: [propertyId], references: [id])
-  lease    Lease?    @relation(fields: [leaseId], references: [id])
-  payment  Payment?  @relation(fields: [paymentId], references: [id])
-  company  Company?  @relation(fields: [companyId], references: [id])
+  user               User?               @relation(fields: [userId], references: [id])
+  tenant             Tenant?             @relation(fields: [tenantId], references: [id])
+  property           Property?           @relation(fields: [propertyId], references: [id])
+  lease              Lease?              @relation(fields: [leaseId], references: [id])
+  payment            Payment?            @relation(fields: [paymentId], references: [id])
+  maintenanceRequest MaintenanceRequest? @relation(fields: [maintenanceRequestId], references: [id]) // <-- matches MaintenanceRequest.activityLogs
+  company            Company?            @relation(fields: [companyId], references: [id])
 }
 
 enum Role {

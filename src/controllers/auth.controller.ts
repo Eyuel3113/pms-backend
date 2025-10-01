@@ -84,9 +84,9 @@ const emailContent = `
 };
 
 
+// ======== Login ==========
 
 
-// Login
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -109,7 +109,8 @@ const userWithProperties = await prisma.user.findUnique({
 });
 
 
-  // Log activity
+  // Log activity for login
+
     await logActivity({
       userId: user.id,
       action: "USER_LOGIN",
@@ -126,7 +127,7 @@ const userWithProperties = await prisma.user.findUnique({
   }
 };
 
-//verify email
+// =========verify email=========
 
 export const verifyEmail = async (req: Request, res: Response) => {
   try {

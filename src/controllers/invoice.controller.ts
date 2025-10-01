@@ -3,6 +3,9 @@ import prisma from "../config/db";
 import { AuthRequest } from "../middlewares/auth";
 
 // Create Invoice
+
+
+
 export const createInvoice = async (req: AuthRequest, res: Response) => {
   try {
     const { role, companyId, id: userId } = req.user!;
@@ -41,6 +44,7 @@ console.log(req.body);
     res.status(500).json({ message: "Server Error", error });
   }
 };
+
 
 // Get All Invoices (with pagination + search + sort)
 export const getInvoices = async (req: AuthRequest, res: Response) => {

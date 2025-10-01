@@ -75,6 +75,28 @@ export const createLease = async (req: AuthRequest, res: Response) => {
       tenantId:tenantId,
       leaseId:lease.id,
     });
+
+
+
+
+  // Automatically create the first invoice
+    await prisma.invoice.create({
+      data: {
+        leaseId: lease.id,
+        tenantId: tenantId,
+        propertyId: lease.unit.propertyId, // requires relation include
+        amount: rentAmount,
+        dueDate: new Date(startDate), // e.g., first due date = lease start date
+      },
+    });
+
+
+
+
+
+
+
+
     
     res.status(201).json({ message: "Lease created successfully", lease });
   } catch (error) {

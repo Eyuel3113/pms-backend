@@ -32,10 +32,10 @@ const router = Router();
  *             properties:
  *               name:
  *                 type: string
- *                 example: "John Doe"
+ *                 example: "Eyuel Endale"
  *               email:
  *                 type: string
- *                 example: "john@example.com"
+ *                 example: "pms@example.com"
  *               password:
  *                 type: string
  *                 example: "strongPassword123"
